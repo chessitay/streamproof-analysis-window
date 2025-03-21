@@ -1,3 +1,6 @@
+https://github.com/user-attachments/assets/2fd60d34-7bc0-42db-a0f7-b55680df2785
+
+
 # BetterMint Streamproof Analysis Window
 
 streamproof analysis window. It shows deep engine analysis but doesn’t show up on your stream(could be discord stream or live yt/tw one) so whoever is watching you can’t see it only you can.
