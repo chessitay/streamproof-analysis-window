@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BetterMint Analysis</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Exo+2">
+  <link href='https://fonts.googleapis.com/css?family=Comfortaa' rel='stylesheet'>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Exo 2", Arial, sans-serif;
+      background-color: #292A2D;
+      color: #e0e0e0;
+      overflow-x: hidden;
+    }
+
+    .dark-theme {
+      background-color: #292A2D;
+    }
+
+    .ultra-dark-theme {
+      background-color: #000;
+    }
+
+    .header {
+      background-color: #5d3fd3;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+    }
+
+    .header-title {
+      font-weight: bold;
+      font-size: 16px;
+      font-family: Comfortaa, "Exo 2", Arial, sans-serif;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .auto-update {
+      display: flex;
+      align-items: center;
+    }
+
+    .auto-update input {
+      margin-right: 5px;
+    }
+
+    .content {
+      padding: 15px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .stat-box {
+      background-color: rgba(255, 255, 255, 0.08);
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #aaa;
+      text-transform: uppercase;
+    }
+
+    .lines-container {
+      margin-top: 15px;
+    }
+
+    .line {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .line:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .line-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .line-number {
+      font-weight: bold;
+      color: #5d3fd3;
+    }
+
+    .line-eval {
+      font-weight: bold;
+    }
+
+    .positive {
+      color: #5ad759;
+    }
+
+    .negative {
+      color: #ff5d5d;
+    }
+
+    .mate {
+      color: #ffcc00;
+    }
+
+    .line-depth {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .line-moves {
+      font-family: monospace;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+
+    .refresh-button {
+      margin-left: 10px;
+      background-color: #5d3fd3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .refresh-button:hover {
+      background-color: #6e52e4;
+    }
+
+    .no-data {
+      text-align: center;
+      margin-top: 40px;
+      color: #999;
+      font-style: italic;
+    }
+
+    .theme-toggle {
+      margin-left: 10px;
+      background-color: transparent;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #5d3fd3;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <div class="header">
+    <div class="header-title">BetterMint Analysis</div>
+    <div class="header-controls">
+      <div class="auto-update">
+        <input type="checkbox" id="auto-update-checkbox" checked>
+        <label for="auto-update-checkbox">Auto-update</label>
+      </div>
+      <button class="theme-toggle" id="theme-toggle">🌓</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-value" id="depth">0</div>
+        <div class="stat-label">Depth</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="position-eval">0.00</div>
+        <div class="stat-label">Evaluation</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="best-move">--</div>
+        <div class="stat-label">Best Move</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="move-quality">--</div>
+        <div class="stat-label">Last Move</div>
+      </div>
+    </div>
+    
+    <div class="lines-container" id="lines-container">
+      <div class="no-data" id="no-data-message">Waiting for analysis data...</div>
+    </div>
+  </div>
+
+  <script>
+    // Theme cycling
+    let currentTheme = 'dark';
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+
+    themeToggle.addEventListener('click', () => {
+      if (currentTheme === 'dark') {
+        body.classList.remove('dark-theme');
+        body.classList.add('ultra-dark-theme');
+        currentTheme = 'ultra-dark';
+      } else {
+        body.classList.remove('ultra-dark-theme');
+        body.classList.add('dark-theme');
+        currentTheme = 'dark';
+      }
+    });
+
+    // Elements to update
+    const depthElement = document.getElementById('depth');
+    const evalElement = document.getElementById('position-eval');
+    const bestMoveElement = document.getElementById('best-move');
+    const moveQualityElement = document.getElementById('move-quality');
+    const linesContainer = document.getElementById('lines-container');
+    const noDataMessage = document.getElementById('no-data-message');
+    const autoUpdateCheckbox = document.getElementById('auto-update-checkbox');
+
+    // Save auto-update preference
+    autoUpdateCheckbox.addEventListener('change', () => {
+      localStorage.setItem('bettermint-auto-update', autoUpdateCheckbox.checked);
+    });
+
+    // Load saved preference
+    if (localStorage.getItem('bettermint-auto-update') !== null) {
+      autoUpdateCheckbox.checked = localStorage.getItem('bettermint-auto-update') === 'true';
+    }
+
+    // Format a single move from UCI format
+    function formatSingleMove(uciMove) {
+      if (!uciMove) return '';
+      
+      // Check for promotion
+      if (uciMove.length === 5) {
+        const promotionPiece = uciMove.charAt(4).toUpperCase();
+        return uciMove.substring(0, 2) + '-' + uciMove.substring(2, 4) + '=' + promotionPiece;
+      }
+      
+      return uciMove.substring(0, 2) + '-' + uciMove.substring(2, 4);
+    }
+
+    // Format chess moves for display
+    function formatMoves(line, turnColor = 'w') {
+      if (typeof line === 'string') {
+        line = line.split(' ');
+      }
+      
+      let formattedMoves = '';
+      let moveNumber = 1;
+      
+      // Determine starting move number and color
+      const isWhiteToMove = turnColor === 'w';
+      
+      for (let i = 0; i < line.length; i++) {
+        // Add move number for white's moves or at the start if black to move
+        if ((isWhiteToMove && i % 2 === 0) || (!isWhiteToMove && i === 0)) {
+          formattedMoves += moveNumber + '. ';
+          
+          // Only add ellipsis for black's first move
+          if (!isWhiteToMove && i === 0) {
+            formattedMoves += '... ';
+          }
+        }
+        
+        // Add the move itself
+        formattedMoves += formatSingleMove(line[i]) + ' ';
+        
+        // Increment move number after black's move
+        if ((isWhiteToMove && i % 2 === 1) || (!isWhiteToMove && i % 2 === 0 && i > 0)) {
+          moveNumber++;
+        }
+      }
+      
+      return formattedMoves.trim();
+    }
+
+    // Update the analysis window with received data
+    function updateAnalysis(data) {
+      if (!data || !data.topMoves || data.topMoves.length === 0) return;
+      
+      // Hide the "no data" message
+      noDataMessage.style.display = 'none';
+      
+      // Update stats
+      depthElement.textContent = data.depth || '0';
+      
+      // Get the best move's evaluation
+      const bestMove = data.topMoves[0];
+      if (bestMove) {
+        let evalText, evalClass;
+        
+        if (bestMove.mate !== null) {
+          const mateIn = Math.abs(bestMove.mate);
+          evalText = bestMove.mate > 0 ? `M${mateIn}` : `-M${mateIn}`;
+          evalClass = 'mate';
+        } else {
+          const cpEval = bestMove.cp / 100;
+          evalText = cpEval > 0 ? `+${cpEval.toFixed(2)}` : cpEval.toFixed(2);
+          evalClass = cpEval >= 0 ? 'positive' : 'negative';
+        }
+        
+        evalElement.textContent = evalText;
+        evalElement.className = `stat-value ${evalClass}`;
+        
+        // Update best move
+        bestMoveElement.textContent = `${formatSingleMove(bestMove.move)}`;
+      }
+      
+      // Update move quality if provided
+      if (data.lastMoveScore) {
+        moveQualityElement.textContent = data.lastMoveScore;
+        
+        // Set color based on move quality
+        const qualityColors = {
+          'Brilliant': '#1baca6',
+          'GreatFind': '#5c8bb0',
+          'BestMove': '#9eba5a',
+          'Excellent': '#96bc4b',
+          'Good': '#96af8b',
+          'Book': '#a88865',
+          'Inaccuracy': '#f0c15c',
+          'Mistake': '#e6912c',
+          'Blunder': '#b33430',
+          'MissedWin': '#dbac16'
+        };
+        
+        if (qualityColors[data.lastMoveScore]) {
+          moveQualityElement.style.color = qualityColors[data.lastMoveScore];
+        }
+      }
+      
+      // Clear previous lines
+      linesContainer.innerHTML = '';
+      
+      // Add each line
+      data.topMoves.forEach((move, index) => {
+        const lineElement = document.createElement('div');
+        lineElement.className = 'line';
+        
+        let evalText, evalClass;
+        
+        if (move.mate !== null) {
+          const mateIn = Math.abs(move.mate);
+          evalText = move.mate > 0 ? `Mate in ${mateIn}` : `Mate in -${mateIn}`;
+          evalClass = 'mate';
+        } else {
+          const cpEval = move.cp / 100;
+          evalText = cpEval > 0 ? `+${cpEval.toFixed(2)}` : cpEval.toFixed(2);
+          evalClass = cpEval >= 0 ? 'positive' : 'negative';
+        }
+        
+        const formattedMoves = formatMoves(move.line, data.turnColor);
+        
+        lineElement.innerHTML = `
+          <div class="line-header">
+            <div class="line-number">Line ${index + 1}</div>
+            <div class="line-eval ${evalClass}">${evalText}</div>
+          </div>
+          <div class="line-depth">Depth: ${move.depth}</div>
+          <div class="line-moves">${formattedMoves}</div>
+        `;
+        
+        linesContainer.appendChild(lineElement);
+      });
+    }
+
+    // Listen for messages from the main page
+    window.addEventListener('message', function(event) {
+      // Only process messages from our extension
+      if (event.data && event.data.type === 'bettermint-analysis-data') {
+        // Only update if auto-update is enabled
+        if (autoUpdateCheckbox.checked) {
+          updateAnalysis(event.data.data);
+        }
+      }
+    });
+
+    // When the window closes, notify the main page
+    window.addEventListener('beforeunload', function() {
+      window.opener.postMessage({ type: 'bettermint-analysis-closed' }, '*');
+    });
+  </script>
+</body>
+</html>
